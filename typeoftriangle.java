@@ -1,0 +1,17 @@
+public class Solution {
+    // Function to determine the type of triangle based on given sides
+    public String triangleType(int[] nums) {
+        // Step 1: Check the triangle inequality condition
+        if (!(nums[0] + nums[1] > nums[2] && nums[0] + nums[2] > nums[1] && nums[2] + nums[1] > nums[0]))
+            return "none";  // If the sides do not satisfy the triangle inequality, return "none"
+
+        // Step 2: Check if all sides are equal (equilateral)
+        if (nums[0] == nums[1] && nums[1] == nums[2])
+            return "equilateral";  // If all sides are equal, return "equilateral"
+        else if (nums[0] != nums[1] && nums[0] != nums[2] && nums[1] != nums[2])
+            return "scalene";  // If no two sides are equal, return "scalene"
+
+        // Step 3: If not equilateral or scalene, it is isosceles
+        return "isosceles";  // Return "isosceles" as the default option
+    }
+} 
