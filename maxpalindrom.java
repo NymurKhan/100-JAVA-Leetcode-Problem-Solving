@@ -2,7 +2,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-class Solution {
+public class Solution {
     public int maxPalindromesAfterOperations(String[] w) {
         int[] t = new int[w.length];
         Map<Character, Integer> m = new HashMap<>();
@@ -50,4 +50,9 @@ class Solution {
         }
         return ans;
     }
+
+    public static void main(String[] args) {
+        // Test your solution here
+    }
 }
+flowergame.java
