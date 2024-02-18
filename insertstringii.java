@@ -1,107 +1,60 @@
 import java.util.*;
 
-class Node {
-    Map<Character, Node> children;
-    char data;
-    boolean isEnd;
+class Solution {
+   public long minimumCost(String source, String target, String[] original, String[] changed, int[] cost) {
+       Set<Integer> subLengths = getSubLengths(original);
+       Map<String, Integer> subToId = getSubToId(original, changed);
+       final int subCount = subToId.size();
 
-    Node(char data) {
-        this.data = data;
-        this.isEnd = false;
-        this.children = new HashMap<>();
-    }
+       long[][] dist = new long[subCount][subCount];
+       for (long[] A : dist) Arrays.fill(A, Long.MAX_VALUE);
 
-    void setEnd(String dest, int cost) {
-        isEnd = true;
-    }
+       long[] dp = new long[source.length() + 1];
+       Arrays.fill(dp, Long.MAX_VALUE);
+
+       for (int i = 0; i < cost.length; ++i) {
+           final int u = subToId.get(original[i]);
+           final int v = subToId.get(changed[i]);
+           dist[u][v] = Math.min(dist[u][v], (long) cost[i]);
+       }
+
+       for (int k = 0; k < subCount; ++k)
+           for (int i = 0; i < subCount; ++i)
+               if (dist[i][k] < Long.MAX_VALUE)
+                  for (int j = 0; j < subCount; ++j)
+                      if (dist[k][j] < Long.MAX_VALUE)
+                          dist[i][j] = Math.min(dist[i][j], dist[i][k] + dist[k][j]);
+
+       dp[0] = 0;
+       for (int i = 0; i < source.length(); ++i) {
+           if (dp[i] == Long.MAX_VALUE) continue;
+           if (target.charAt(i) == source.charAt(i)) dp[i + 1] = Math.min(dp[i + 1], dp[i]);
+
+           for (int subLength : subLengths) {
+               if (i + subLength > source.length()) continue;
+               String subSource = source.substring(i, i + subLength);
+               String subTarget = target.substring(i, i + subLength);
+               if (!subToId.containsKey(subSource) || !subToId.containsKey(subTarget)) continue;
+               final int u = subToId.get(subSource);
+               final int v = subToId.get(subTarget);
+               if (dist[u][v] < Long.MAX_VALUE)
+                  dp[i + subLength] = Math.min(dp[i + subLength], dp[i] + dist[u][v]);
+           }
+       }
+
+       return dp[source.length()] == Long.MAX_VALUE ? -1 : dp[source.length()];
+   }
+
+   private Map<String, Integer> getSubToId(String[] original, String[] changed) {
+       Map<String, Integer> subToId = new HashMap<>();
+       for (final String s : original) subToId.putIfAbsent(s, subToId.size());
+       for (final String s : changed) subToId.putIfAbsent(s, subToId.size());
+       return subToId;
+   }
+
+   private Set<Integer> getSubLengths(String[] original) {
+       Set<Integer> subLengths = new HashSet<>();
+       for (final String s : original) subLengths.add(s.length());
+       return subLengths;
+   }
 }
-
-public class Solution {
-
-    long[][] dist = new long[1000][1000];
-    Map<String, Integer> index = new HashMap<>();
-    long INF = (long) 1e18;
-    long[] dp = new long[1000];
-
-    void insert(Node root, String source, String dest, int cost, int i) {
-        if (i == source.length()) {
-            root.setEnd(dest, cost);
-            return;
-        }
-        Node node = root.children.getOrDefault(source.charAt(i), new Node(source.charAt(i)));
-        root.children.put(source.charAt(i), node);
-        insert(node, source, dest, cost, i + 1);
-    }
-
-    long func(Node root, String source, String target, int i) {
-        if (i == target.length())
-            return 0;
-        if (dp[i] == -1) {
-            long opt1 = INF, opt2 = INF;
-            if (source.charAt(i) == target.charAt(i))
-                opt1 = func(root, source, target, i + 1);
-            Node node = root;
-            StringBuilder sourceSubstr = new StringBuilder(), targetSubstr = new StringBuilder();
-            for (int j = i; j < source.length(); j++) {
-                targetSubstr.append(target.charAt(j));
-                sourceSubstr.append(source.charAt(j));
-                Node child = node.children.get(source.charAt(j));
-                if (child == null)
-                    break;
-                node = child;
-                if (node.isEnd) {
-                    int jt = index.getOrDefault(sourceSubstr.toString(), -1);
-                    int kt = index.getOrDefault(targetSubstr.toString(), -1);
-                    if (jt != -1 && kt != -1 && dist[jt][kt] != INF)
-                        opt2 = Math.min(opt2, func(root, source, target, j + 1) + dist[jt][kt]);
-                }
-            }
-            dp[i] = Math.min(opt1, opt2);
-        }
-        return dp[i];
-    }
-
-    void floydWarshall(List<String> original, List<String> changed, List<Integer> cost) {
-        Set<String> S = new HashSet<>();
-        for (int i = 0; i < original.size(); i++) {
-            S.add(original.get(i));
-            S.add(changed.get(i));
-        }
-        int size = 0;
-        for (String it : S) {
-            index.put(it, size);
-            size++;
-        }
-        for (int i = 0; i < size; i++) {
-            for (int j = 0; j < size; j++) {
-                dist[i][j] = INF;
-                if (i == j)
-                    dist[i][j] = 0;
-            }
-        }
-        for (int i = 0; i < original.size(); i++)
-            dist[index.get(original.get(i))][index.get(changed.get(i))] = Math.min(dist[index.get(original.get(i))][index.get(changed.get(i))], cost.get(i));
-
-        for (int k = 0; k < size; k++) {
-            for (int i = 0; i < size; i++) {
-                for (int j = 0; j < size; j++) {
-                    if (dist[i][j] > (dist[i][k] + dist[k][j]) && (dist[k][j] != INF && dist[i][k] != INF))
-                        dist[i][j] = dist[i][k] + dist[k][j];
-                }
-            }
-        }
-    }
-
-    long minimumCost(String source, String target, List<String> original, List<String> changed, List<Integer> cost) {
-        Node root = new Node('\0');
-        floydWarshall(original, changed, cost);
-        Arrays.fill(dp, -1);
-        for (int i = 0; i < original.size(); i++)
-            insert(root, original.get(i), changed.get(i), cost.get(i), 0);
-        long ans = func(root, source, target, 0);
-        if (ans == INF)
-            ans = -1;
-        return ans;
-    }
-}
-
